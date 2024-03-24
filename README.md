@@ -30,15 +30,8 @@ Run the development server:
 
 Access the web application through your browser:
 
-bash
-Copy code
 http://localhost:8000/
-Register as a user and provide your details, including your location.
-
-When flooding occurs in your area, you will receive an SMS alert.
 
 Contributing
 Contributions are welcome! If you encounter any issues or have suggestions for improvements, please open an issue or submit a pull request.
 
-License
-This project is licensed under the MIT License.
