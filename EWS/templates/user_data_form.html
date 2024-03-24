@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>User Data Form</title>
+  </head>
+  <body>
+    <h2>Welcome, please fill out the following form</h2>
+
+    <form method="post" id="user_data_form">
+      {% csrf_token %} {{ form.as_p }}
+      <button type="submit">Submit</button>
+    </form>
+    <!-- Add submit button -->
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        // Populate counties dropdown
+        $.ajax({
+          url: "/load_counties/",
+          success: function (data) {
+            var countySelect = $("#id_county");
+            countySelect.empty(); // Clear existing options
+            $.each(data, function (index, county) {
+              countySelect.append(
+                '<option value="' +
+                  county.county_name +
+                  '">' +
+                  county.county_name +
+                  "</option>"
+              );
+            });
+          },
+        });
+
+        // Event handler for county change
+        $("#id_county").change(function () {
+          var countyName = $(this).val(); // Get the selected county name
+
+          // Populate sub-counties dropdown based on the selected county name
+          $.ajax({
+            url: "/load_sub-counties/",
+            data: {
+              county_name: countyName, // Pass the selected county name
+            },
+            success: function (data) {
+              var subCountySelect = $("#id_sub_county");
+              subCountySelect.empty(); // Clear existing options
+              $.each(data, function (index, subCounty) {
+                subCountySelect.append(
+                  '<option value="' +
+                    subCounty.sub_county_name +
+                    '">' +
+                    subCounty.sub_county_name +
+                    "</option>"
+                );
+              });
+            },
+          });
+        });
+
+        // Event handler for sub-county change
+        $("#id_sub_county").change(function () {
+          var subCountyName = $(this).val(); // Get the selected sub-county name
+
+          // Populate locations dropdown based on the selected sub-county name
+          $.ajax({
+            url: "/load_locations/",
+            data: {
+              sub_county_name: subCountyName, // Pass the selected sub-county name
+            },
+            success: function (data) {
+              var locationSelect = $("#id_location");
+              locationSelect.empty(); // Clear existing options
+              $.each(data, function (index, location) {
+                locationSelect.append(
+                  '<option value="' +
+                    location.location_name +
+                    '">' +
+                    location.location_name +
+                    "</option>"
+                );
+              });
+            },
+          });
+        });
+
+        // Event handler for location change
+        $("#id_location").change(function () {
+          var locationName = $(this).val(); // Get the selected location name
+
+          // Populate sub-locations dropdown based on the selected location name
+          $.ajax({
+            url: "/load_sub_locations/",
+            data: {
+              location_name: locationName, // Pass the selected location name
+            },
+            success: function (data) {
+              var subLocationSelect = $("#id_sub_location");
+              subLocationSelect.empty(); // Clear existing options
+              $.each(data, function (index, subLocation) {
+                subLocationSelect.append(
+                  '<option value="' +
+                    subLocation.sub_location_name +
+                    '">' +
+                    subLocation.sub_location_name +
+                    "</option>"
+                );
+              });
+            },
+          });
+        });
+      });
+
+      $(document).ready(function () {
+        // Event handler for form submission
+        $("#user_data_form").submit(function (event) {
+          event.preventDefault(); // Prevent the default form submission
+
+          // Get the CSRF token value
+          var csrftoken = $("[name=csrfmiddlewaretoken]").val();
+
+          // Get the selected values from the form fields
+          var formData = {
+            csrfmiddlewaretoken: csrftoken, // Include the CSRF token
+            first_name: $("#id_first_name").val(),
+            last_name: $("#id_last_name").val(),
+            phone_number: $("#id_phone_number").val(),
+            county: $("#id_county").val(),
+            sub_county: $("#id_sub_county").val(),
+            location: $("#id_location").val(),
+            sub_location: $("#id_sub_location").val(),
+          };
+
+          // Log the content of formData
+          console.log(formData);
+
+          // Send the form data to the server using AJAX
+          $.ajax({
+            url: "/save_user_data/",
+            method: "POST",
+            data: formData,
+            success: function (response) {
+              // Handle the success response from the server
+              console.log(response);
+            },
+            error: function (xhr, status, error) {
+              // Handle any errors that occur during the AJAX request
+              console.error(error);
+            },
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
