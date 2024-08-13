@@ -57,9 +57,10 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'EarlyWarningSystem.urls'
 
 # Twilio configuration
-TWILIO_ACCOUNT_SID = 'ACcbcb468daf7e166d0bfa7f5c5bf63c60'
-TWILIO_AUTH_TOKEN= '38e84ffd40788e4298c97e2b1d4a780f'
-TWILIO_PHONE_NUMBER = '+18566725041'
+account_sid = 'ACcbcb468daf7e166d0bfa7f5c5bf63c60'
+auth_token = '60ed2ce92b28ef10d2bbe4783f8033d7'
+
+
 
 TEMPLATES = [
     {

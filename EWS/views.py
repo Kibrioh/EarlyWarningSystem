@@ -1,3 +1,5 @@
+from random import choices
+import traceback
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
@@ -5,54 +7,58 @@ from EWS.forms import UserDataForm
 from django.http import HttpResponse
 from geopy.geocoders import Nominatim
 from twilio.rest import Client
-from EWS.models import UserData, AdminBoundaries
+from EWS.models import userdata, AdminBoundaries
 from django.conf import settings
 import openpyxl
+from django.views.decorators.http import require_POST
+from django.db import transaction
 # view functions
 
 def load_counties(request):
-    distinct_counties = AdminBoundaries.objects.values_list('county').distinct('county')
-    counties_list = [{'county_name': county} for county in distinct_counties]
+    counties = AdminBoundaries.objects.order_by('county').distinct('county')
+    counties_list = [{'county': 'Select county'}]  # Initial value
+    counties_list += [{'county': c.county} for c in counties]
     return JsonResponse(counties_list, safe=False)
 
 def load_sub_counties(request):
-    county_name = request.GET.get('county_name')
-    sub_counties = AdminBoundaries.objects.filter(county=county_name).order_by('sub_cnty').values_list('sub_cnty', flat=True).distinct()
-    sub_counties_list = [{'sub_county_name': sub_county} for sub_county in sub_counties]
+    county = request.GET.get('county')
+    sub_counties = AdminBoundaries.objects.filter(county=county).order_by('sub_cnty').distinct('sub_cnty')
+    sub_counties_list = [{'sub_county': 'Sub county'}]
+    sub_counties_list += [{'sub_county': sub_county.sub_cnty} for sub_county in sub_counties]
     return JsonResponse(sub_counties_list, safe=False)
 
 def load_locations(request):
-    sub_county_name = request.GET.get('sub_county_name')
-    locations = AdminBoundaries.objects.filter(sub_cnty=sub_county_name).order_by('location').values_list('location', flat=True).distinct()
-    locations_list = [{'location_name': location} for location in locations]
+    sub_county = request.GET.get('sub_county')
+    locations = AdminBoundaries.objects.filter(sub_cnty=sub_county).order_by('location').distinct('location')
+    locations_list = [{'location': 'Location'}]
+    locations_list += [{'location': location.location} for location in locations]
     return JsonResponse(locations_list, safe=False)
 
 def load_sub_locations(request):
-    location_name = request.GET.get('location_name')
-    sub_locations = AdminBoundaries.objects.filter(location=location_name).order_by('sub_locat').values_list('sub_locat', flat=True).distinct()
-    sub_locations_list = [{'sub_location_name': sub_location} for sub_location in sub_locations]
+    location = request.GET.get('location')
+    sub_locations = AdminBoundaries.objects.filter(location=location).order_by('sub_locat').distinct('sub_locat')
+    sub_locations_list  = [{'sub_location': 'Sub location'}]
+    sub_locations_list += [{'sub_location': sub_location.sub_locat} for sub_location in sub_locations]
     return JsonResponse(sub_locations_list, safe=False)
 
-
 # Geocoding
-def save_user_data(first_name, last_name,phone_number,sub_location):
+def save_user_data(first_name, last_name,phone_number, county, sub_county, location, sub_location):
     geolocator = Nominatim(user_agent="EarlyWarningSystem")
-    location_data = geolocator.geocode(sub_location)
+    location_data = geolocator.geocode(location)
 
     if location_data:
         latitude = location_data.latitude
         longitude = location_data.longitude
 
-        # Get or create the AdminBoundaries instance based on the user's location
-        admin_boundaries_instance, created = AdminBoundaries.objects.get_or_create(
-            sub_location=sub_location  
-        )
 
-        UserData.objects.create(
+        userdata.objects.create(
             first_name = first_name,
             last_name=last_name,
             phone_number=phone_number,
-            sub_location=admin_boundaries_instance,
+            location=location,
+            county=county,
+            sub_county=sub_county,
+            sub_location=sub_location,
             latitude=latitude,
             longitude=longitude
         )
@@ -63,13 +69,16 @@ def save_user_data(first_name, last_name,phone_number,sub_location):
 
 
 
-def send_sms(phone_number, message):
-    client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+def send_sms(phone_number):
+    account_sid = settings.account_sid
+    auth_token = settings.auth_token
+    client = Client(account_sid, auth_token)
+
     message = client.messages.create(
-        body=message,
-        from_=settings.TWILIO_PHONE_NUMBER,
-        to=phone_number,
-    )
+        messaging_service_sid='MG5d340a14f88312ffa03d5865521f7347',
+        body='Flood Watch in effect for Budalangi Sub_county for the next 2 weeks. Heavy rainfall expected.Stay informed and be prepared to move to higher grounds if flooding occurs.',
+        to=phone_number
+        )
     print(message.sid)
     
     
@@ -79,7 +88,7 @@ def send_sms(phone_number, message):
 def is_within_flood_prone_area(latitude, longitude):
     # Define flood-prone area boundaries
     min_latitude = -0.11
-    max_latitude = 0.04
+    max_latitude = 0.37
     min_longitude = 33.57
     max_longitude = 34.14
     if latitude is not None and longitude is not None:
@@ -90,38 +99,38 @@ def is_within_flood_prone_area(latitude, longitude):
 
 
 
-
-
-def user_data_form(request):
-    if request.method == 'POST':
-        form = UserDataForm(request.POST)
-        if form.is_valid():
-            print(request.POST)
-            first_name = form.cleaned_data.get('first_name')
-            last_name = form.cleaned_data.get('last_name')
-            phone_number = form.cleaned_data.get('phone_number')
-            sub_location = form.cleaned_data.get('sub_location')
-
-            print("First Name:", first_name)
-            print("Last Name:", last_name)
-            print("Phone Number:", phone_number)
-            print("Sub Location:", sub_location)
-
-            save_user_data(first_name, last_name, phone_number, sub_location)
-            filename = 'C:/Users/User/Downloads/Brian/5.1/Project/water_levels.xlsx'
-            process_water_levels(filename)
-            return HttpResponse("Early warning sent successfully.")
-        return redirect('success_page')  # Redirect to a success page
-    else:
-        form = UserDataForm()
-
-    return render(request, 'user_data_form.html', {'form': form})
-
 def success_page(request):
     return render(request, 'success_page.html')
 
 
 
+
+def user_data_form(request):
+    phone_numbers = userdata.objects.values_list('phone_number', flat=True)
+    if request.method == 'POST':
+        form = UserDataForm(request.POST)
+        if form.is_valid():
+            print(form.cleaned_data)
+            with transaction.atomic():
+                # Extract cleaned data from the form
+                first_name = form.cleaned_data['first_name']
+                last_name = form.cleaned_data['last_name']
+                phone_number = form.cleaned_data['phone_number']
+                county = form.cleaned_data['county']
+                sub_county = form.cleaned_data['sub_county']
+                location = form.cleaned_data['location']
+                sub_location = form.cleaned_data['sub_location']
+                save_user_data(first_name, last_name,phone_number, county, sub_county, location, sub_location)
+            for phone_number in phone_numbers:
+                send_sms(phone_number)    
+                # Additional operations, if needed
+
+            return redirect('success_page')
+        
+    else:
+        form = UserDataForm()
+
+    return render(request, 'user_data_form.html', {'form': form})
 
 def process_water_levels(filename):
     # Load the Excel sheet
@@ -136,7 +145,7 @@ def process_water_levels(filename):
 
         if water_level > 3:
             # Retrieve user data from PostgreSQL database
-            user_data = UserData.objects.all()
+            user_data = userdata.objects.all()
             for user in user_data:
                 user_latitude = user.latitude
                 user_longitude = user.longitude

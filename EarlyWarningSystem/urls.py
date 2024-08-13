@@ -21,5 +21,6 @@ from EWS.views import success_page
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('user/', include('EWS.urls')),
-    path('', include('EWS.urls'))
+    path('success_page/', success_page),
+     path('', include('EWS.urls'))
 ]
