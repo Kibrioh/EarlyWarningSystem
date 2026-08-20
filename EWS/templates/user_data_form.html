@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Early Warning System 4 All</title>
+  </head>
+  <body>
+    <h2>Welcome, please fill out the following form</h2>
+
+    <form id="user_data_form" method="POST">
+      {% csrf_token %} {{ form.as_p }}
+      <button type="submit">Submit</button>
+    </form>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        // Populate counties dropdown
+        $.ajax({
+          url: "/load_counties/",
+          success: function (data) {
+            var countySelect = $("#id_county");
+            countySelect.empty(); // Clear existing options
+            $.each(data, function (index, county) {
+              countySelect.append(
+                '<option value="' +
+                  county.county +
+                  '">' +
+                  county.county +
+                  "</option>"
+              );
+            });
+          },
+        });
+
+        // Event handler for county change
+        $("#id_county").change(function () {
+          var county = $(this).val(); // Get the selected county name
+
+          // Populate sub-counties dropdown based on the selected county name
+          $.ajax({
+            url: "/load_sub-counties/",
+            data: {
+              county: county, // Pass the selected county name
+            },
+            success: function (data) {
+              var subCountySelect = $("#id_sub_county");
+              subCountySelect.empty(); // Clear existing options
+              $.each(data, function (index, subCounty) {
+                subCountySelect.append(
+                  '<option value="' +
+                    subCounty.sub_county +
+                    '">' +
+                    subCounty.sub_county +
+                    "</option>"
+                );
+              });
+            },
+          });
+        });
+
+        // Event handler for sub-county change
+
+        $("#id_sub_county").change(function () {
+          var subCounty = $(this).val(); // Get the selected sub-county name
+
+          // Populate locations dropdown based on the selected sub-county name
+          $.ajax({
+            url: "/load_locations/",
+            data: {
+              sub_county: subCounty, // Pass the selected sub-county name
+            },
+            success: function (data) {
+              var locationSelect = $("#id_location");
+              locationSelect.empty(); // Clear existing options
+              $.each(data, function (index, location) {
+                locationSelect.append(
+                  '<option value="' +
+                    location.location +
+                    '">' +
+                    location.location +
+                    "</option>"
+                );
+              });
+            },
+          });
+        });
+
+        // Event handler for location change
+        $("#id_location").change(function () {
+          var location = $(this).val(); // Get the selected location name
+
+          // Populate sub-locations dropdown based on the selected location name
+          $.ajax({
+            url: "/load_sub_locations/",
+            data: {
+              location: location, // Pass the selected location name
+            },
+            success: function (data) {
+              var subLocationSelect = $("#id_sub_location");
+              subLocationSelect.empty(); // Clear existing options
+              $.each(data, function (index, subLocation) {
+                subLocationSelect.append(
+                  '<option value="' +
+                    subLocation.sub_location +
+                    '">' +
+                    subLocation.sub_location +
+                    "</option>"
+                );
+              });
+            },
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
