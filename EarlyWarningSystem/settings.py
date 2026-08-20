@@ -21,8 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-dy%mv80rxhxu_((i0q_s-89c=a456h#^v-j5(!ze=il7d!r+_y'
-
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -57,9 +56,8 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'EarlyWarningSystem.urls'
 
 # Twilio configuration
-account_sid = 'ACcbcb468daf7e166d0bfa7f5c5bf63c60'
-auth_token = '60ed2ce92b28ef10d2bbe4783f8033d7'
-
+account_sid = os.getenv('TWILIO_ACCOUNT_SID')
+auth_token = os.getenv('TWILIO_AUTH_TOKEN')
 
 
 TEMPLATES = [
@@ -87,11 +85,11 @@ WSGI_APPLICATION = 'EarlyWarningSystem.wsgi.application'
 DATABASES = {
    'default': {
  'ENGINE': 'django.contrib.gis.db.backends.postgis',
- 'NAME': 'EWS', #Name of the database
- 'USER': 'postgres', #Name of the user
- 'HOST': 'localhost', #Change if the database lives in a system different from your local system.
- 'PASSWORD': '20005756Bk!',
- 'PORT': '5432', }
+ 'NAME': os.getenv('DB_NAME'), #Name of the database
+ 'USER': os.getenv('DB_USER'), #Name of the user
+ 'HOST': os.getenv('DB_HOST'), #Change if the database lives in a system different from your local system.
+ 'PASSWORD': os.getenv('DB_PASSWORD'),
+ 'PORT': os.getenv('DB_PORT'), }
 }
 
 # Set the static files for Leaflet
