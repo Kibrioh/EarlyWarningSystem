@@ -22,10 +22,6 @@ git clone https://github.com/kibrioh/EarlyWarningSystem.git
 Set up the database: Postgres/PostGIS
 
 Set up environment variables for your geocoding service API key and SMS service provider credentials.
-
-TWILIO_ACCOUNT_SID = 'ACcbcb468daf7e166d0bfa7f5c5bf63c60'
-TWILIO_AUTH_TOKEN= '38e84ffd40788e4298c97e2b1d4a780f'
-TWILIO_PHONE_NUMBER = '+18566725041'
 Run the development server:
 
 Access the web application through your browser:
